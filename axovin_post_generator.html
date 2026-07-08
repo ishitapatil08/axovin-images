@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Axovin Post Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --navy:#0B1130;
+    --navy-2:#0E1538;
+    --blue:#3A5CFF;
+    --teal:#16E0C4;
+    --amber:#FFA23D;
+    --lime:#C6FF4D;
+    --white:#FFFFFF;
+    --muted:#9AA1C4;
+    --line:rgba(255,255,255,0.10);
+    --card:rgba(255,255,255,0.04);
+    --card-border:rgba(255,255,255,0.09);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:#14152B;
+    color:#fff;
+    padding:28px 16px 60px;
+  }
+  .app{max-width:1180px;margin:0 auto;}
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    align-items:center;
+    background:#1B1D3D;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:14px 18px;
+    margin-bottom:24px;
+  }
+  .toolbar label{font-size:12px;color:#9BA0C4;margin-right:6px;text-transform:uppercase;letter-spacing:.06em;}
+  select, .fmt-btn, .dl-btn{
+    background:#262A52;
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:14px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .fmt-group{display:flex;gap:6px;}
+  .fmt-btn.active{background:var(--blue);border-color:var(--blue);}
+  .dl-btn{
+    background:var(--teal);
+    color:#04342C;
+    font-weight:700;
+    margin-left:auto;
+  }
+  .dl-btn:hover{opacity:.9;}
+  .stage-wrap{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    overflow:hidden;
+  }
+  #scaler{transform-origin: top center;}
+
+  /* ---- POST CANVAS ---- */
+  .post{
+    position:relative;
+    background:
+      radial-gradient(circle at 82% 14%, rgba(58,92,255,0.35), rgba(58,92,255,0) 42%),
+      radial-gradient(circle at 88% 10%, rgba(120,80,255,0.30), rgba(120,80,255,0) 38%),
+      var(--navy);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    padding:56px 64px;
+  }
+  .post.square{width:1080px;height:1080px;}
+  .post.wide{width:1200px;height:627px;padding:48px 64px;}
+  .post::before{
+    content:"";
+    position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:26px 26px;
+    opacity:.5;
+    pointer-events:none;
+  }
+  .row{position:relative;z-index:1;}
+  .header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding-bottom:18px;border-bottom:1px solid var(--line);
+  }
+  .logo{
+    font-family:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
+    font-weight:500;font-size:19px;letter-spacing:.32em;
+    color:var(--blue);
+  }
+  .badge{
+    font-family:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
+    font-size:14px;letter-spacing:.14em;color:var(--muted);
+    text-transform:uppercase;
+  }
+  .headline{
+    font-family:'Space Grotesk','Arial Black',Arial,sans-serif;
+    font-weight:700;
+    font-size:60px;
+    line-height:1.08;
+    letter-spacing:-0.01em;
+    color:#fff;
+    margin-top:38px;
+  }
+  .post.wide .headline{font-size:46px;margin-top:26px;}
+  .sub{
+    font-size:20px;
+    color:var(--muted);
+    line-height:1.5;
+    margin-top:18px;
+    max-width:640px;
+  }
+  .post.wide .sub{font-size:17px;margin-top:12px;max-width:520px;}
+  .module{margin-top:auto;padding-top:34px;}
+  .closing{
+    font-size:22px;
+    color:#fff;
+    font-weight:600;
+    margin-top:26px;
+  }
+  .post.wide .closing{font-size:18px;margin-top:16px;}
+  .footer{
+    display:flex;justify-content:space-between;align-items:center;
+    padding-top:22px;margin-top:26px;border-top:1px solid var(--line);
+  }
+  .footer-left{display:flex;align-items:center;gap:10px;}
+  .footer-url{font-weight:700;font-size:18px;}
+  .footer-tag{font-size:15px;color:var(--muted);}
+
+  /* module: cards generic */
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:26px 28px;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .grid2x2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;color:var(--lime);text-transform:uppercase;margin-bottom:8px;}
+  .val{font-size:19px;font-weight:600;color:#fff;}
+
+  /* CTA module (post 10) */
+  .cta-book{background:linear-gradient(160deg, rgba(22,224,196,0.10), rgba(58,92,255,0.10));border:1px solid var(--card-border);border-radius:16px;padding:34px 28px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:8px;}
+  .cta-book .t1{font-size:24px;font-weight:700;color:#fff;}
+  .cta-book .t2{font-size:24px;font-weight:700;color:var(--lime);}
+  .cta-book .t3{font-size:15px;color:var(--muted);margin-top:6px;}
+
+  /* AI agent module (post 6) */
+  .online-row{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--lime);}
+  .online-text{font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.08em;color:var(--lime);}
+  .chat-bubble{background:rgba(255,255,255,0.05);border-radius:12px;padding:16px 18px;font-size:17px;color:#e7e9f7;margin-bottom:16px;}
+  .agent-btn{display:inline-block;background:#6C5CE7;color:#fff;font-weight:700;font-size:16px;padding:14px 22px;border-radius:10px;}
+
+  /* stats grid */
+  .stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:20px;}
+  .stat-num{font-family:'Space Grotesk','Arial Black',Arial,sans-serif;font-size:32px;font-weight:700;color:var(--teal);}
+  .stat-label{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  /* website module */
+  .browser{border-radius:14px;overflow:hidden;border:1px solid var(--card-border);background:var(--card);}
+  .browser-bar{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--card-border);}
+  .browser-bar span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.18);}
+  .browser-body{padding:22px 26px;display:grid;grid-template-columns:1.1fr 1fr;gap:24px;}
+  .wire{background:rgba(255,255,255,0.09);border-radius:6px;}
+  .checklist{display:flex;flex-direction:column;gap:12px;justify-content:center;}
+  .check-item{display:flex;align-items:center;gap:10px;font-size:16px;color:#fff;}
+  .check-icon{width:20px;height:20px;border-radius:50%;background:rgba(22,224,196,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  /* app module */
+  .app-wrap{display:flex;gap:28px;align-items:center;}
+  .phone{width:190px;height:270px;border:2px solid var(--card-border);border-radius:22px;background:rgba(255,255,255,0.03);padding:16px 14px;flex-shrink:0;}
+  .phone-bar{height:10px;width:60px;border-radius:6px;background:rgba(255,255,255,0.14);margin:0 auto 16px;}
+  .phone-row{height:14px;border-radius:6px;background:rgba(255,255,255,0.08);margin-bottom:10px;}
+  .pill-row{display:flex;gap:12px;margin-top:6px;}
+  .pill{padding:9px 16px;border-radius:100px;border:1px solid var(--card-border);font-size:14px;color:#fff;}
+
+  /* marketing module */
+  .chart-wrap{display:flex;align-items:flex-end;gap:14px;height:120px;}
+  .bar{width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg, var(--teal), rgba(22,224,196,0.25));}
+
+  /* automation flow module */
+  .flow{display:flex;align-items:center;justify-content:space-between;}
+  .flow-node{flex:1;text-align:center;}
+  .flow-icon{width:56px;height:56px;border-radius:14px;background:rgba(58,92,255,0.16);border:1px solid rgba(58,92,255,0.4);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;}
+  .flow-label{font-size:15px;color:#fff;font-weight:600;}
+  .flow-arrow{color:var(--muted);font-size:22px;padding:0 6px;}
+
+  /* process timeline */
+  .timeline{display:flex;justify-content:space-between;position:relative;}
+  .timeline::before{content:"";position:absolute;top:19px;left:5%;right:5%;height:1px;background:var(--card-border);}
+  .tl-step{position:relative;text-align:center;width:22%;}
+  .tl-num{width:38px;height:38px;border-radius:50%;background:var(--navy);border:1px solid var(--blue);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Space Grotesk','Arial Black',Arial,sans-serif;margin:0 auto 14px;position:relative;z-index:1;}
+  .tl-label{font-size:15px;color:#fff;font-weight:600;}
+
+  /* pricing module */
+  .price-wrap{display:flex;align-items:center;gap:24px;}
+  .price-icon{width:70px;height:70px;border-radius:16px;background:rgba(255,162,61,0.14);border:1px solid rgba(255,162,61,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .price-text .t1{font-size:19px;font-weight:700;color:#fff;}
+  .price-text .t2{font-size:15px;color:var(--muted);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div>
+      <label>Post</label>
+      <select id="postSelect"></select>
+    </div>
+    <div class="fmt-group">
+      <label style="margin-right:0;">Format</label>
+      <button class="fmt-btn active" data-fmt="square" id="fmtSquare">Instagram 1:1</button>
+      <button class="fmt-btn" data-fmt="wide" id="fmtWide">LinkedIn 1200x627</button>
+    </div>
+    <button class="dl-btn" id="downloadBtn">Download PNG</button>
+  </div>
+
+  <div class="stage-wrap" id="stageWrap">
+    <div id="scaler">
+      <div class="post square" id="post">
+        <div class="row header">
+          <div class="logo">AXOVIN</div>
+          <div class="badge" id="badge"></div>
+        </div>
+        <div class="row headline" id="headline"></div>
+        <div class="row sub" id="sub"></div>
+        <div class="row module" id="module"></div>
+        <div class="row closing" id="closing"></div>
+        <div class="row footer">
+          <div class="footer-left">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+              <circle cx="3" cy="23" r="2.2" fill="var(--lime)"/>
+              <path d="M4 21 L10 15 L14 18 L22 6" stroke="var(--lime)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 6 L22 6 L22 12" stroke="var(--lime)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="footer-url">axovin.com</span>
+          </div>
+          <div class="footer-tag">Build Smarter. Grow Faster.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const POSTS = [
+{
+  id:"01_brand_intro", tag:"AXOVIN · BUILD SMARTER, GROW FASTER",
+  headline:["One team.","Every digital need."],
+  sub:"Websites, apps, marketing, and AI automation — everything a modern business needs to scale, under one roof.",
+  module:{type:"stats3", data:[["100+","Projects delivered"],["150+","Happy clients"],["24h","Avg response time"]]},
+  closing:"Ready to build something great?"
+},
+{
+  id:"02_website_development", tag:"SERVICE 01 · WEBSITE DEVELOPMENT",
+  headline:["Your website should","work as hard as you do."],
+  sub:"Fast, conversion-optimised websites that turn visitors into clients.",
+  module:{type:"website", data:["Custom design","E-commerce ready","SEO-optimised","Mobile-first"]},
+  closing:"A slow, outdated site is costing you customers right now."
+},
+{
+  id:"03_app_development", tag:"SERVICE 02 · APP DEVELOPMENT",
+  headline:["One idea. Two platforms.","Zero compromise."],
+  sub:"Native and cross-platform apps that feel seamless on every device.",
+  module:{type:"app", data:["iOS","Android","PWA"]},
+  closing:"Got an app idea? Let's turn it into something people use."
+},
+{
+  id:"04_digital_marketing", tag:"SERVICE 03 · DIGITAL MARKETING",
+  headline:["Traffic is easy.","Qualified traffic is the game."],
+  sub:"SEO, paid ads, and social strategy built on data — designed to bring in the right people.",
+  module:{type:"marketing", data:[30,45,38,60,82]},
+  closing:"More clicks mean nothing without conversions."
+},
+{
+  id:"05_ai_automations", tag:"SERVICE 04 · AI AUTOMATIONS",
+  headline:["What if your busywork","ran itself?"],
+  sub:"Smart automations that handle repetitive tasks and connect your tools.",
+  module:{type:"flow", data:["Manual task","Automation","Time saved"]},
+  closing:"Work smarter, not longer."
+},
+{
+  id:"06_ai_agents", tag:"SERVICE 05 · AI AGENTS",
+  headline:["Your new teammate","never sleeps."],
+  sub:"",
+  module:{type:"agent", data:{chat:"\u201CCan I get a quote for...\u201D", button:"Instantly answered"}},
+  closing:"This isn't a chatbot. It's a teammate."
+},
+{
+  id:"07_our_process", tag:"HOW WE WORK",
+  headline:["From idea to launch,","without the chaos."],
+  sub:"Here's exactly how we work with you.",
+  module:{type:"timeline", data:["Discovery call","Strategy & proposal","Build & review","Launch & support"]},
+  closing:"No vague estimates. No surprises."
+},
+{
+  id:"08_why_choose_axovin", tag:"WHY AXOVIN",
+  headline:["The numbers","speak for themselves."],
+  sub:"We're not just vendors — we're invested in your outcome.",
+  module:{type:"stats4", data:[["100+","Projects"],["150+","Clients"],["24h","Response"],["5","Core services"]]},
+  closing:"That's why businesses keep coming back."
+},
+{
+  id:"09_fixed_pricing", tag:"TRANSPARENT PRICING",
+  headline:["No hidden fees.","No scope-creep surprises."],
+  sub:"Every project comes with fixed, transparent pricing.",
+  module:{type:"pricing", data:"You know exactly what you're paying before we lift a finger."},
+  closing:"Just honest work."
+},
+{
+  id:"10_cta_free_consultation", tag:"GET STARTED",
+  headline:["Let's build","something great."],
+  sub:"Book a free 30-minute strategy call — no pressure, just a real conversation.",
+  module:{type:"cta", data:{email:"info.axovin@gmail.com", phone:"+91 89993 32671", web:"axovin.com"}},
+  closing:""
+}
+];
+
+function iconCheck(){
+  return '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.8 9L10 3" stroke="#16E0C4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function iconBolt(){
+  return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#3A5CFF"/></svg>';
+}
+function iconTag(){
+  return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M20 12l-8 8-9-9V3h8l9 9z" stroke="#FFA23D" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7.5" cy="7.5" r="1.5" fill="#FFA23D"/></svg>';
+}
+
+function renderModule(m){
+  if(m.type==="stats3" || m.type==="stats4"){
+    const cols = m.type==="stats3" ? "grid" : "grid2x2";
+    const style = m.type==="stats3" ? "display:grid;grid-template-columns:repeat(3,1fr);gap:16px;" : "display:grid;grid-template-columns:1fr 1fr;gap:16px;";
+    return `<div style="${style}">` + m.data.map(([num,label])=>`
+      <div class="stat-card"><div class="stat-num">${num}</div><div class="stat-label">${label}</div></div>
+    `).join("") + `</div>`;
+  }
+  if(m.type==="website"){
+    return `<div class="browser">
+      <div class="browser-bar"><span></span><span></span><span></span></div>
+      <div class="browser-body">
+        <div style="display:flex;flex-direction:column;gap:10px;justify-content:center;">
+          <div class="wire" style="height:14px;width:70%;"></div>
+          <div class="wire" style="height:14px;width:90%;"></div>
+          <div class="wire" style="height:14px;width:55%;"></div>
+          <div class="wire" style="height:44px;width:40%;background:rgba(58,92,255,0.35);"></div>
+        </div>
+        <div class="checklist">
+          ${m.data.map(t=>`<div class="check-item"><span class="check-icon">${iconCheck()}</span>${t}</div>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  }
+  if(m.type==="app"){
+    return `<div class="app-wrap">
+      <div class="phone">
+        <div class="phone-bar"></div>
+        <div class="phone-row" style="width:80%;"></div>
+        <div class="phone-row" style="width:60%;"></div>
+        <div class="phone-row" style="width:90%;background:rgba(58,92,255,0.3);height:34px;"></div>
+        <div class="phone-row" style="width:70%;margin-top:20px;"></div>
+        <div class="phone-row" style="width:50%;"></div>
+      </div>
+      <div>
+        <div class="pill-row" style="flex-direction:column;">
+          ${m.data.map(p=>`<div class="pill">${p}</div>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  }
+  if(m.type==="marketing"){
+    const max = Math.max(...m.data);
+    return `<div class="card"><div class="eyebrow">ROI, not just clicks</div>
+      <div class="chart-wrap">
+        ${m.data.map(v=>`<div class="bar" style="height:${(v/max*100)}px;"></div>`).join("")}
+        <div style="margin-left:10px;">${iconBolt()}</div>
+      </div>
+    </div>`;
+  }
+  if(m.type==="flow"){
+    return `<div class="card"><div class="flow">
+      ${m.data.map((label,i)=>`
+        <div class="flow-node">
+          <div class="flow-icon">${iconBolt()}</div>
+          <div class="flow-label">${label}</div>
+        </div>
+        ${i<m.data.length-1? '<div class="flow-arrow">&#8594;</div>' : ''}
+      `).join("")}
+    </div></div>`;
+  }
+  if(m.type==="agent"){
+    return `<div class="card">
+      <div class="online-row"><span class="dot"></span><span class="online-text">ONLINE · 24/7</span></div>
+      <div class="chat-bubble">${m.data.chat}</div>
+      <div class="agent-btn">${m.data.button} ${iconCheck()}</div>
+    </div>`;
+  }
+  if(m.type==="timeline"){
+    return `<div class="timeline">
+      ${m.data.map((label,i)=>`
+        <div class="tl-step">
+          <div class="tl-num">${i+1}</div>
+          <div class="tl-label">${label}</div>
+        </div>
+      `).join("")}
+    </div>`;
+  }
+  if(m.type==="pricing"){
+    return `<div class="card price-wrap">
+      <div class="price-icon">${iconTag()}</div>
+      <div class="price-text"><div class="t1">Fixed, transparent pricing</div><div class="t2">${m.data}</div></div>
+    </div>`;
+  }
+  if(m.type==="cta"){
+    return `<div class="grid2">
+      <div class="card">
+        <div class="eyebrow">Email</div><div class="val" style="margin-bottom:16px;">${m.data.email}</div>
+        <div class="eyebrow">Phone</div><div class="val" style="margin-bottom:16px;">${m.data.phone}</div>
+        <div class="eyebrow">Web</div><div class="val">${m.data.web}</div>
+      </div>
+      <div class="cta-book">
+        <div class="t1">Book Your</div>
+        <div class="t2">Free Strategy Call</div>
+        <div class="t3">Link in bio &#8594;</div>
+      </div>
+    </div>`;
+  }
+  return "";
+}
+
+let currentFmt = "square";
+
+function render(){
+  const id = document.getElementById("postSelect").value;
+  const post = POSTS.find(p=>p.id===id);
+  document.getElementById("badge").textContent = post.tag;
+  document.getElementById("headline").innerHTML = post.headline.join("<br>");
+  document.getElementById("sub").textContent = post.sub;
+  document.getElementById("sub").style.display = post.sub ? "block" : "none";
+  document.getElementById("module").innerHTML = renderModule(post.module);
+  document.getElementById("closing").textContent = post.closing;
+  document.getElementById("closing").style.display = post.closing ? "block" : "none";
+}
+
+function setFormat(fmt){
+  currentFmt = fmt;
+  const el = document.getElementById("post");
+  el.classList.remove("square","wide");
+  el.classList.add(fmt);
+  document.getElementById("fmtSquare").classList.toggle("active", fmt==="square");
+  document.getElementById("fmtWide").classList.toggle("active", fmt==="wide");
+  fitStage();
+}
+
+function fitStage(){
+  const wrap = document.getElementById("stageWrap");
+  const scaler = document.getElementById("scaler");
+  const post = document.getElementById("post");
+  const realW = currentFmt === "square" ? 1080 : 1200;
+  const availW = Math.min(wrap.clientWidth, 720);
+  const scale = availW / realW;
+  scaler.style.transform = `scale(${scale})`;
+  const realH = currentFmt === "square" ? 1080 : 627;
+  wrap.style.height = (realH * scale) + "px";
+}
+
+const sel = document.getElementById("postSelect");
+POSTS.forEach(p=>{
+  const opt = document.createElement("option");
+  opt.value = p.id;
+  opt.textContent = p.id.replace(/^\d+_/,"").replace(/_/g," ");
+  sel.appendChild(opt);
+});
+sel.addEventListener("change", render);
+document.getElementById("fmtSquare").addEventListener("click", ()=>setFormat("square"));
+document.getElementById("fmtWide").addEventListener("click", ()=>setFormat("wide"));
+window.addEventListener("resize", fitStage);
+
+document.getElementById("downloadBtn").addEventListener("click", ()=>{
+  const original = document.getElementById("post");
+  const clone = original.cloneNode(true);
+  clone.style.transform = "none";
+  clone.style.position = "fixed";
+  clone.style.left = "-99999px";
+  clone.style.top = "0";
+  document.body.appendChild(clone);
+  html2canvas(clone, {backgroundColor:"#0B1130", scale:1}).then(canvas=>{
+    const link = document.createElement("a");
+    const id = document.getElementById("postSelect").value;
+    link.download = "axovin_" + id + "_" + currentFmt + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    document.body.removeChild(clone);
+  });
+});
+
+render();
+fitStage();
+</script>
+</body>
+</html>
